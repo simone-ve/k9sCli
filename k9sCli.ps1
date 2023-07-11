@@ -51,28 +51,29 @@ if ($OutputVariable -Like "*No resources found*") {
 }
 
 function get-List {
-    Write-Host "Azioni disponibili:"
-    Write-Host "1  - Lista pods"
-    Write-Host "3  - Accesso al container (Shell)"
-    Write-Host "3  - Rimuovi un Pod"
-    Write-Host "4  - Descrivi un Pod"
-    Write-Host "5  - Visualizza i container del namespace associato"
-	Write-Host "6  - Visualizza i Log di un Container"
-	Write-Host "7  - Lista secrets del pod (filtro namespace)"
-	Write-Host "8  - Lista secretproviderclass del pod (filtro namespace) - NON UTILIZZABILE(GRANT)" -ForegroundColor DarkGray
-	Write-Host "9  - Lista secrets del cluster"
-	Write-Host "10 - Descrivo il secret"
-	Write-Host "11 - Lista degli eventi"
-	Write-Host "12 - Lista eventi del pod"
-	Write-Host "13 - Statistiche Keda del namespace associato"
-	Write-Host "14 - Nessuna - esci`n"
+    Write-Host " Azioni disponibili:`n"
+    Write-Host " 1  - Lista pods"
+    Write-Host " 3  - Accesso al container (Shell)"
+    Write-Host " 3  - Rimuovi un Pod"
+    Write-Host " 4  - Descrivi un Pod"
+    Write-Host " 5  - Visualizza i container del namespace associato"
+	Write-Host " 6  - Visualizza i Log di un Container"
+	Write-Host " 7  - Lista secrets del pod (filtro namespace)"
+	Write-Host " 8  - Lista secretproviderclass del pod (filtro namespace) - NON UTILIZZABILE(GRANT)" -ForegroundColor DarkGray
+	Write-Host " 9  - Lista secrets del cluster"
+	Write-Host " 10 - Descrivo il secret"
+	Write-Host " 11 - Lista degli eventi"
+	Write-Host " 12 - Lista eventi del pod"
+	Write-Host " 13 - Statistiche Keda del namespace associato"
+	Write-Host " 14 - Nessuna - esci`n"
 }
 
 get-List
 
 while(1) {
 	if (!$action) {
-		$action = Read-Host "Selezionata un'azione"
+		$action = Read-Host "Seleziona un'azione"
+		Write-Host "`n"
 	}
 	switch ($action)
 	{
@@ -84,15 +85,15 @@ while(1) {
 			kubectl --kubeconfig $filename --namespace=$namespece get pods 
 		}
 		2 { #Accesso al container (Shell)
-			$container_id = Read-Host "Inserisci l'id del container(NAME)"
+			$container_id = Read-Host "`nInserisci l'id del container(NAME)"
 			kubectl --kubeconfig $filename -n $namespece exec -it $container_id -c $container_name -- sh -c "clear; (bash || ash || sh)"
 		}
 		3 { #Rimuovi un Pod
-			$container_id = Read-Host "Inserisci l'id del container(NAME)"
+			$container_id = Read-Host "`nInserisci l'id del container(NAME)"
 			kubectl --kubeconfig $filename -n $namespece delete pod $container_id 
 		}
 		4 { #Descrivi un Pod
-			$pod_id = Read-Host "Inserisci l'id del pod che vuoi ispezionare"
+			$pod_id = Read-Host "`nInserisci l'id del pod che vuoi ispezionare"
 			kubectl --kubeconfig $filename -n $namespece describe pod/$pod_id
 		}
 		5 { #Visualizza i container di un namespace
@@ -102,9 +103,9 @@ while(1) {
 		6 { #Visualizza i Log di un Container
 			Write-Host "Per comodità ti elenco la lista dei Pod...."
 			kubectl --kubeconfig $filename --namespace=$namespece get pods
-			$pod_id = Read-Host "Inserisci l'id del pod(NAME)"
+			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			$row_num = Read-Host "Numero di righe (ultime) che vuoi visualizzare?"
-			$container_name = Read-Host "Inserisci il nome del container"
+			$container_name = Read-Host "`nInserisci il nome del container"
 			kubectl --kubeconfig $filename logs $pod_id -n $namespece  --tail=$row_num -c $container_name
 		}
 		7 { #Lista secrets del pod (filtro namespace)
@@ -118,9 +119,9 @@ while(1) {
 		}
 		10 { #Descrivo il secret
 			kubectl --kubeconfig $filename -n $namespece get secrets
-			$secret_id = Read-Host "Inserisci l'id del secret"
+			$secret_id = Read-Host "`nInserisci l'id del secret"
 			kubectl --kubeconfig $filename -n $namespece describe secrets $secret_id
-			$dettagli  = Read-Host "Desideri ulteriori dettagli (y/n)?"
+			$dettagli  = Read-Host "`nDesideri ulteriori dettagli (y/n)?"
 			if ($dettagli -eq "y") {
 				kubectl --kubeconfig $filename -n $namespece get secrets $secret_id -o yaml
 			}
@@ -137,7 +138,7 @@ while(1) {
 		12 { #Lista eventi del pod
 			Write-Host "Per comodità ti elenco la lista dei Pod...."
 			kubectl --kubeconfig $filename --namespace=$namespece get pods
-			$pod_id = Read-Host "Inserisci l'id del pod(NAME)"
+			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			#Devo passare per una stringa altrimenti il comando fallisce. Assurdo!
 			$command_string = "kubectl --kubeconfig $filename --namespace=$namespece get events --field-selector involvedObject.kind=Pod,involvedObject.name=$pod_id"
 			cmd.exe /c $command_string
@@ -156,6 +157,7 @@ while(1) {
 		}
 	}
 		$action = Read-Host "`nSe desideri ottenere la lista delle scelte possibili premi zero altrimenti scegli una delle ozioni disponibili (CTRL-C per terminare)"
+		Write-Host "`n"
 }
 
 
