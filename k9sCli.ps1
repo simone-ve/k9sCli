@@ -2,11 +2,12 @@
 
 $sessions 		 = $null
 $filename 		 = $null
+$namespece		 = $null
 $action 		 = $null
 $container_id 	 = $null
 $OutputVariable  = $null
 $match_condition = $null
-$prefix = "pl"
+$prefix 		 = "pl"
 
 Clear-Host
 
@@ -19,36 +20,6 @@ if(($ambiente -eq "dev") -or ($ambiente -eq "qa")){
 $sessions = Get-ChildItem 'C:\Users\simone.rigo\Enel\kubernates' | Where-Object { $_.Name -match $match_condition }
 
 Write-Host "Sto cercando ....`n"
-
-if ($container_name.StartsWith($prefix)){
-	Write-Host "Trovato prefizzo (pl). Lo elimino"
-	$length = $container_name.length
-	$container_name = $container_name.Substring(2,$length-2)
-	Write-Warning "Il componente è stato rinominato: " $container_name
-}
-
-if ($container_name.StartsWith("mp")){
-	$namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
-} else {
-	$namespece = -join("glin-",$apm_code,"pl",$container_name,"-",$ambiente,"-platform-namespace")
-}
-
-foreach ($session in $sessions) {
-    $filename = ($session.Name.Substring($session.Name.LastIndexOf("\") + 1)).Replace("%20"," ")
-    $OutputVariable = (kubectl --kubeconfig $filename -n $namespece get pods 2>&1) | Out-String
-    #Write-Host $OutputVariable
-    if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
-        Write-Host "Componente trovato nel cluster: " $filename -ForegroundColor White
-        Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
-        break
-    }
-}
-
-if ($OutputVariable -Like "*No resources found*") {
-	 Write-Error "Ops... Qualcosa è andato storto :-( " -ForegroundColor Magenta
-	 Write-Host "Bye"
-     break
-}
 
 function get-List {
     Write-Host " Azioni disponibili:`n"
@@ -66,6 +37,46 @@ function get-List {
 	Write-Host " 12 - Lista eventi del pod"
 	Write-Host " 13 - Statistiche Keda del namespace associato"
 	Write-Host " 14 - Nessuna - esci`n"
+}
+
+function print-Msg {
+	Write-Host "Componente trovato nel cluster: " $filename -ForegroundColor White
+    Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
+}
+
+if ($container_name.StartsWith($prefix)){
+	Write-Host "Trovato prefizzo (pl). Lo elimino"
+	$length = $container_name.length
+	$container_name = $container_name.Substring(2,$length-2)
+	Write-Warning "Il componente è stato rinominato: " $container_name
+}
+
+foreach ($session in $sessions) {
+	$OutputVariable = $null
+    $filename = ($session.Name.Substring($session.Name.LastIndexOf("\") + 1)).Replace("%20"," ")
+	$namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
+	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
+    $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
+	#Write-Host "command_str	--> " $command_str
+	#Write-Host "filename	--> " $filename
+    #Write-Host "OutputVariable	--> " $OutputVariable
+    if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
+		print-Msg
+        break
+    }
+	$namespece = -join("glin-",$apm_code,"pl",$container_name,"-",$ambiente,"-platform-namespace")
+	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
+    $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
+    if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
+		print-Msg
+        break
+    }	
+}
+
+if ($OutputVariable -Like "*No resources found*") {
+	 Write-Host "Ops... Qualcosa è andato storto :-( " -ForegroundColor Magenta
+	 Write-Host "Bye"
+     break
 }
 
 get-List
@@ -140,8 +151,8 @@ while(1) {
 			kubectl --kubeconfig $filename --namespace=$namespece get pods
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			#Devo passare per una stringa altrimenti il comando fallisce. Assurdo!
-			$command_string = "kubectl --kubeconfig $filename --namespace=$namespece get events --field-selector involvedObject.kind=Pod,involvedObject.name=$pod_id"
-			cmd.exe /c $command_string
+			$command_str = "kubectl --kubeconfig $filename --namespace=$namespece get events --field-selector involvedObject.kind=Pod,involvedObject.name=$pod_id"
+			cmd.exe /c $command_str
 		}
 		13 { #Statistiche Keda del namespace associato
 			Write-Host "visualizza scaledobject...."
