@@ -1,25 +1,21 @@
 ﻿Param($ambiente,$apm_code,$container_name)
 
-$sessions 		 = $null
-$filename 		 = $null
-$namespece		 = $null
-$action 		 = $null
-$container_id 	 = $null
-$OutputVariable  = $null
-$match_condition = $null
-$prefix 		 = "pl"
+$sessions 		 	 = $null
+$action 		 	 = $null
+$OutputVariable  	 = $null
+$match_condition 	 = $null
+$global:filename 	 = $null
+$global:namespece	 = $null
+$global:container_id = $null
+$global:find_message = "Sto cercando ."
+$global:cursorTop 	 = [Console]::CursorTop
+$global:counter		 = 0
+$global:frames 		 = '|', '/', '-', '\' 
+$prefix 		     = "pl"
 
 Clear-Host
 
-if(($ambiente -eq "dev") -or ($ambiente -eq "qa")){
-	$match_condition = '^(dev).*\.yaml$'
-} else {
-	$match_condition = '^(prod).*\.yaml$'
-}
-
-$sessions = Get-ChildItem 'C:\Users\simone.rigo\Enel\kubernates' | Where-Object { $_.Name -match $match_condition }
-
-Write-Host "Sto cercando ....`n"
+[Console]::CursorVisible = $false
 
 function get-List {
     Write-Host " Azioni disponibili:`n"
@@ -44,6 +40,22 @@ function print-Msg {
     Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
 }
 
+function print-find-Msg {
+	$cursorTop 	 = [Console]::CursorTop
+	[Console]::SetCursorPosition(0, $cursorTop)
+	$frame = $frames[$global:counter % $frames.Length]
+	Write-Host "Sto cercando $frame" -NoNewLine
+	$global:counter += 1
+}
+
+if(($ambiente -eq "dev") -or ($ambiente -eq "qa")){
+	$match_condition = '^(dev).*\.yaml$'
+} else {
+	$match_condition = '^(prod).*\.yaml$'
+}
+
+$sessions = Get-ChildItem 'C:\Users\simone.rigo\Enel\kubernates' | Where-Object { $_.Name -match $match_condition }
+
 if ($container_name.StartsWith($prefix)){
 	Write-Host "Trovato prefizzo (pl). Lo elimino"
 	$length = $container_name.length
@@ -53,6 +65,7 @@ if ($container_name.StartsWith($prefix)){
 
 foreach ($session in $sessions) {
 	$OutputVariable = $null
+	print-find-Msg
     $filename = ($session.Name.Substring($session.Name.LastIndexOf("\") + 1)).Replace("%20"," ")
 	$namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
 	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
@@ -61,6 +74,7 @@ foreach ($session in $sessions) {
 	#Write-Host "filename	--> " $filename
     #Write-Host "OutputVariable	--> " $OutputVariable
     if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
+		Clear-Host
 		print-Msg
         break
     }
@@ -68,9 +82,10 @@ foreach ($session in $sessions) {
 	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
     $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
     if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
+		Clear-Host
 		print-Msg
         break
-    }	
+    }
 }
 
 if ($OutputVariable -Like "*No resources found*") {
