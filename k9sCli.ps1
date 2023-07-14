@@ -48,6 +48,11 @@ function print-find-Msg {
 	$global:counter += 1
 }
 
+function print-Pod-List {
+	Write-Host "Per comodità ti elenco la lista dei Pod...."
+    kubectl --kubeconfig $filename --namespace=$namespece get pods
+}
+
 if(($ambiente -eq "dev") -or ($ambiente -eq "qa")){
 	$match_condition = '^(dev).*\.yaml$'
 } else {
@@ -78,6 +83,7 @@ foreach ($session in $sessions) {
 		print-Msg
         break
     }
+	#in alcuni casi nel cluster appare con il prefisso pl. Provo a cercarlo anche in questo modo
 	$namespece = -join("glin-",$apm_code,"pl",$container_name,"-",$ambiente,"-platform-namespace")
 	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
     $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
@@ -119,16 +125,22 @@ while(1) {
 			kubectl --kubeconfig $filename -n $namespece delete pod $container_id 
 		}
 		4 { #Descrivi un Pod
-			$pod_id = Read-Host "`nInserisci l'id del pod che vuoi ispezionare"
-			kubectl --kubeconfig $filename -n $namespece describe pod/$pod_id
+			Write-Host "Verranno descritti i pod associati al nemaspace conosciuto"
+			$event_type = Read-Host "Se vuoi ispeziona uno specifico pod premi y"
+			if ($event_type -eq "y") {
+				print-Pod-List
+				$pod_id = Read-Host "`nInserisci l'id del pod che vuoi ispezionare"
+				kubectl --kubeconfig $filename -n $namespece describe pod/$pod_id
+			} else {
+				kubectl --kubeconfig $filename -n $namespece get pods --output=yaml
+			}			
 		}
 		5 { #Visualizza i container di un namespace
 			Write-Host "Lista container container...."
 			kubectl --kubeconfig $filename -n $namespece get pods -o jsonpath='{range .items[*]}{"\n"}{.metadata.name}{":\t"}{range .spec.containers[*]}{.image}{", "}{end}{end}' |sort
 		}
 		6 { #Visualizza i Log di un Container
-			Write-Host "Per comodità ti elenco la lista dei Pod...."
-			kubectl --kubeconfig $filename --namespace=$namespece get pods
+			print-Pod-List
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			$row_num = Read-Host "Numero di righe (ultime) che vuoi visualizzare?"
 			$container_name = Read-Host "`nInserisci il nome del container"
@@ -162,8 +174,7 @@ while(1) {
 		}
 
 		12 { #Lista eventi del pod
-			Write-Host "Per comodità ti elenco la lista dei Pod...."
-			kubectl --kubeconfig $filename --namespace=$namespece get pods
+			print-Pod-List
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			#Devo passare per una stringa altrimenti il comando fallisce. Assurdo!
 			$command_str = "kubectl --kubeconfig $filename --namespace=$namespece get events --field-selector involvedObject.kind=Pod,involvedObject.name=$pod_id"
