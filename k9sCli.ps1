@@ -201,7 +201,9 @@ while(1) {
 			kubectl --kubeconfig $filename -n $namespece get svc
 		}
 		15 { #Metriche del Pod
-			kubectl --kubeconfig $filename -n $namespece describe PodMetrics mefld-log-968d4d99d-7xz6s
+			printPodList
+			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
+			kubectl --kubeconfig $filename -n $namespece describe PodMetrics $pod_id
 		}
 		16 { #Nessuna - esci
 			exit
