@@ -1,9 +1,17 @@
-﻿Param($ambiente,$apm_code,$container_name)
+﻿#####################################
+# Input parameter:                  #
+# $ambiente -> dev,qa,prod          #
+# $apm_code_in -> ap31312, dl00003  #
+# $container_name -> es mp00555     #
+#####################################
+
+Param($ambiente,$apm_code_in,$container_name)
 
 $sessions 		 	 = $null
 $action 		 	 = $null
 $OutputVariable  	 = $null
 $match_condition 	 = $null
+$global:apm_code	 = $null
 $global:filename 	 = $null
 $global:namespece	 = $null
 $global:container_id = $null
@@ -16,9 +24,10 @@ $prefix 		     = "pl"
 Clear-Host
 
 [Console]::CursorVisible = $false
+$apm_code = $apm_code_in.ToLower()
 
 function get-List {
-    Write-Host " Azioni disponibili:`n"
+    Write-Host " Azioni disponibili (riferite al namespace):`n"
     Write-Host " 1  - Lista pods"
     Write-Host " 3  - Accesso al container (Shell)"
     Write-Host " 3  - Rimuovi un Pod"
@@ -31,8 +40,10 @@ function get-List {
 	Write-Host " 10 - Descrivo il secret"
 	Write-Host " 11 - Lista degli eventi"
 	Write-Host " 12 - Lista eventi del pod"
-	Write-Host " 13 - Statistiche Keda del namespace associato"
-	Write-Host " 14 - Nessuna - esci`n"
+	Write-Host " 13 - Statistiche Keda"
+	Write-Host " 14 - Lista dei services"
+	Write-Host " 15 - Metriche del Pod"
+	Write-Host " 16 - Nessuna - esci`n"
 }
 
 function print-Msg {
@@ -75,9 +86,9 @@ foreach ($session in $sessions) {
 	$namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
 	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
     $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
-	#Write-Host "command_str	--> " $command_str
-	#Write-Host "filename	--> " $filename
-    #Write-Host "OutputVariable	--> " $OutputVariable
+	#13Write-Host "`ncommand_str	--> " $command_str
+	#13Write-Host "filename	--> " $filename
+    #13Write-Host "OutputVariable	--> " $OutputVariable
     if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
 		Clear-Host
 		print-Msg
@@ -186,7 +197,13 @@ while(1) {
 			Write-Host "visualizza ScaledJobs...."
 			kubectl --kubeconfig $filename -n $namespece get ScaledJobs
 		}
-		14 { #Nessuna - esci
+		14 { #Lista dei services del namespace associato
+			kubectl --kubeconfig $filename -n $namespece get svc
+		}
+		15 { #Metriche del Pod
+			kubectl --kubeconfig $filename -n $namespece describe PodMetrics mefld-log-968d4d99d-7xz6s
+		}
+		16 { #Nessuna - esci
 			exit
 		}
 		Default {
