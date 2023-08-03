@@ -46,12 +46,12 @@ function get-List {
 	Write-Host " 16 - Nessuna - esci`n"
 }
 
-function print-Msg {
+function printMsg {
 	Write-Host "Componente trovato nel cluster: " $filename -ForegroundColor White
     Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
 }
 
-function print-find-Msg {
+function printFindMsg {
 	$cursorTop 	 = [Console]::CursorTop
 	[Console]::SetCursorPosition(0, $cursorTop)
 	$frame = $frames[$global:counter % $frames.Length]
@@ -59,7 +59,7 @@ function print-find-Msg {
 	$global:counter += 1
 }
 
-function print-Pod-List {
+function printPodList {
 	Write-Host "Per comodità ti elenco la lista dei Pod...."
     kubectl --kubeconfig $filename --namespace=$namespece get pods
 }
@@ -76,12 +76,12 @@ if ($container_name.StartsWith($prefix)){
 	Write-Host "Trovato prefizzo (pl). Lo elimino"
 	$length = $container_name.length
 	$container_name = $container_name.Substring(2,$length-2)
-	Write-Warning "Il componente è stato rinominato: " $container_name
+	Write-Host "Il componente è stato rinominato: " $container_name -ForegroundColor Yellow
 }
 
 foreach ($session in $sessions) {
 	$OutputVariable = $null
-	print-find-Msg
+	printFindMsg
     $filename = ($session.Name.Substring($session.Name.LastIndexOf("\") + 1)).Replace("%20"," ")
 	$namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
 	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
@@ -91,7 +91,7 @@ foreach ($session in $sessions) {
     #13Write-Host "OutputVariable	--> " $OutputVariable
     if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
 		Clear-Host
-		print-Msg
+		printMsg
         break
     }
 	#in alcuni casi nel cluster appare con il prefisso pl. Provo a cercarlo anche in questo modo
@@ -100,7 +100,7 @@ foreach ($session in $sessions) {
     $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
     if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
 		Clear-Host
-		print-Msg
+		printMsg
         break
     }
 }
@@ -139,7 +139,7 @@ while(1) {
 			Write-Host "Verranno descritti i pod associati al nemaspace conosciuto"
 			$event_type = Read-Host "Se vuoi ispeziona uno specifico pod premi y"
 			if ($event_type -eq "y") {
-				print-Pod-List
+				printPodList
 				$pod_id = Read-Host "`nInserisci l'id del pod che vuoi ispezionare"
 				kubectl --kubeconfig $filename -n $namespece describe pod/$pod_id
 			} else {
@@ -148,10 +148,10 @@ while(1) {
 		}
 		5 { #Visualizza i container di un namespace
 			Write-Host "Lista container container...."
-			kubectl --kubeconfig $filename -n $namespece get pods -o jsonpath='{range .items[*]}{"\n"}{.metadata.name}{":\t"}{range .spec.containers[*]}{.image}{", "}{end}{end}' |sort
+			kubectl --kubeconfig $filename -n $namespece get pods -o jsonpath='{range .items[*]}{"\n"}{.metadata.name}{":\t"}{range .spec.containers[*]}{.image}{", "}{end}{end}' | Sort-Object
 		}
 		6 { #Visualizza i Log di un Container
-			print-Pod-List
+			printPodList
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			$row_num = Read-Host "Numero di righe (ultime) che vuoi visualizzare?"
 			$container_name = Read-Host "`nInserisci il nome del container"
@@ -185,7 +185,7 @@ while(1) {
 		}
 
 		12 { #Lista eventi del pod
-			print-Pod-List
+			printPodList
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			#Devo passare per una stringa altrimenti il comando fallisce. Assurdo!
 			$command_str = "kubectl --kubeconfig $filename --namespace=$namespece get events --field-selector involvedObject.kind=Pod,involvedObject.name=$pod_id"
