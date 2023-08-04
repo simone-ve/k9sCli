@@ -27,7 +27,7 @@ Clear-Host
 $apm_code = $apm_code_in.ToLower()
 
 function get-List {
-    Write-Host " Azioni disponibili (riferite al namespace):`n"
+    Write-Host "Azioni disponibili (riferite al namespace):`n"
     Write-Host " 1  - Lista pods"
     Write-Host " 3  - Accesso al container (Shell)"
     Write-Host " 3  - Rimuovi un Pod"
@@ -48,12 +48,14 @@ function get-List {
 
 function printMsg {
 	Write-Host "Componente trovato nel cluster: " $filename -ForegroundColor White
-    Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
 }
 
 function printFindMsg {
+	Clear-Host
 	$cursorTop 	 = [Console]::CursorTop
 	[Console]::SetCursorPosition(0, $cursorTop)
+	Write-Host "Il componente è stato rinominato: " $container_name -ForegroundColor Yellow
+	Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
 	$frame = $frames[$global:counter % $frames.Length]
 	Write-Host "Sto cercando $frame" -NoNewLine
 	$global:counter += 1
@@ -76,14 +78,14 @@ if ($container_name.StartsWith($prefix)){
 	Write-Host "Trovato prefizzo (pl). Lo elimino"
 	$length = $container_name.length
 	$container_name = $container_name.Substring(2,$length-2)
-	Write-Host "Il componente è stato rinominato: " $container_name -ForegroundColor Yellow
+
 }
 
 foreach ($session in $sessions) {
 	$OutputVariable = $null
+	$namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
 	printFindMsg
     $filename = ($session.Name.Substring($session.Name.LastIndexOf("\") + 1)).Replace("%20"," ")
-	$namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
 	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
     $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
 	#13Write-Host "`ncommand_str	--> " $command_str
@@ -91,6 +93,7 @@ foreach ($session in $sessions) {
     #13Write-Host "OutputVariable	--> " $OutputVariable
     if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
 		Clear-Host
+		Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
 		printMsg
         break
     }
@@ -100,6 +103,7 @@ foreach ($session in $sessions) {
     $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
     if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
 		Clear-Host
+		Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
 		printMsg
         break
     }
