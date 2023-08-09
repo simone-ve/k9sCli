@@ -43,7 +43,8 @@ function get-List {
 	Write-Host " 13 - Statistiche Keda"
 	Write-Host " 14 - Lista dei services"
 	Write-Host " 15 - Metriche del Pod"
-	Write-Host " 16 - Nessuna - esci`n"
+	Write-Host " 16 - Verifica i servizi attivi nel cluster (es: prometheus,istiod,zipkin ecc)"
+	Write-Host " 17 - Nessuna - esci`n"
 }
 
 function printMsg {
@@ -54,7 +55,6 @@ function printFindMsg {
 	Clear-Host
 	$cursorTop 	 = [Console]::CursorTop
 	[Console]::SetCursorPosition(0, $cursorTop)
-	Write-Host "Il componente è stato rinominato: " $container_name -ForegroundColor Yellow
 	Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
 	$frame = $frames[$global:counter % $frames.Length]
 	Write-Host "Sto cercando $frame" -NoNewLine
@@ -78,6 +78,8 @@ if ($container_name.StartsWith($prefix)){
 	Write-Host "Trovato prefizzo (pl). Lo elimino"
 	$length = $container_name.length
 	$container_name = $container_name.Substring(2,$length-2)
+	Write-Host "Il componente è stato rinominato: " $container_name -ForegroundColor Yellow
+	Start-Sleep -Seconds 2
 
 }
 
@@ -137,7 +139,11 @@ while(1) {
 		}
 		3 { #Rimuovi un Pod
 			$container_id = Read-Host "`nInserisci l'id del container(NAME)"
-			kubectl --kubeconfig $filename -n $namespece delete pod $container_id 
+			$action = Read-Host "`nSei sicuro di voler cancellare il pod(y/n)?"
+			if ($action -eq "y") {
+				kubectl --kubeconfig $filename -n $namespece delete pod $container_id
+			}
+			$action = $null
 		}
 		4 { #Descrivi un Pod
 			Write-Host "Verranno descritti i pod associati al nemaspace conosciuto"
@@ -209,7 +215,10 @@ while(1) {
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			kubectl --kubeconfig $filename -n $namespece describe PodMetrics $pod_id
 		}
-		16 { #Nessuna - esci
+		16 { #Verifica i servizi attivi
+			kubectl --kubeconfig $filename -n istio-system get svc
+		}
+		17 { #Nessuna - esci
 			exit
 		}
 		Default {

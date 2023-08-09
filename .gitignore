@@ -12,3 +12,5 @@ ekslan-reader-dev-cluster-1.yaml
 prod_dl00003.yaml
 prod-1.yaml
 prod-2.yaml
+kubeconfig_user_reader_eks_glin_ap31312plmefdz_dev_platform
+kubeconfig_user_reader_eks_glin_ap31312plmetgz_dev_platform
