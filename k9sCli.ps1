@@ -44,7 +44,10 @@ function get-List {
 	Write-Host " 14 - Lista dei services"
 	Write-Host " 15 - Metriche del Pod"
 	Write-Host " 16 - Verifica i servizi attivi nel cluster (es: prometheus,istiod,zipkin ecc)"
-	Write-Host " 17 - Nessuna - esci`n"
+	Write-Host " 17 - Visualizza i pods all'inteno dell'istio namespace (istio-system)"
+	Write-Host " 18 - Visualizza punto di ingresso del cluster (url/ip/porte esposte)"
+	Write-Host " 19 - Visualizza il services del cluster/namespace selezionato"
+	Write-Host " 20 - Nessuna - esci`n"
 }
 
 function printMsg {
@@ -158,7 +161,12 @@ while(1) {
 		}
 		5 { #Visualizza i container di un namespace
 			Write-Host "Lista container container...."
-			kubectl --kubeconfig $filename -n $namespece get pods -o jsonpath='{range .items[*]}{"\n"}{.metadata.name}{":\t"}{range .spec.containers[*]}{.image}{", "}{end}{end}' | Sort-Object
+			kubectl --kubeconfig $filename --namespace=$namespece get pod -o="custom-columns=NAME:.metadata.name,INIT-CONTAINERS:.spec.initContainers[*].name,CONTAINERS:.spec.containers[*].name"
+            $dettagli = Read-Host "`nDesideri visualizzare i relativi account aws utilizzati(y/n)?"
+			if ($dettagli -eq "y") {
+				kubectl --kubeconfig $filename -n $namespece get pods -o jsonpath='{range .items[*]}{"\n"}{.metadata.name}{":\t"}{range .spec.containers[*]}{.image}{", "}{end}{end}' | Sort-Object
+			}
+			$dettagli = $null
 		}
 		6 { #Visualizza i Log di un Container
 			printPodList
@@ -218,7 +226,16 @@ while(1) {
 		16 { #Verifica i servizi attivi
 			kubectl --kubeconfig $filename -n istio-system get svc
 		}
-		17 { #Nessuna - esci
+		17 { #Visualizza i pods all'inteno dell'istio namespace
+			kubectl --kubeconfig $filename -n istio-system get pods
+		}
+		18 { #Visualizza punto di ingresso del cluster
+			kubectl --kubeconfig $filename -n istio-system -l istio=ingressgateway get svc
+		}
+		19 { # Visualizza il services del cluster/namespace selezionato
+			kubectl --kubeconfig $filename --namespace $namespece get services
+		}
+		20 { #Nessuna - esci
 			exit
 		}
 		Default {
