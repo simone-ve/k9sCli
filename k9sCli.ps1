@@ -47,7 +47,8 @@ function get-List {
 	Write-Host " 17 - Visualizza i pods all'inteno dell'istio namespace (istio-system)"
 	Write-Host " 18 - Visualizza punto di ingresso del cluster (url/ip/porte esposte)"
 	Write-Host " 19 - Visualizza il services del cluster/namespace selezionato"
-	Write-Host " 20 - Nessuna - esci`n"
+	Write-Host " 20 - Visualizza lo stato di hpa"
+	Write-Host " 21 - Nessuna - esci`n"
 }
 
 function printMsg {
@@ -115,7 +116,7 @@ foreach ($session in $sessions) {
 }
 
 if ($OutputVariable -Like "*No resources found*") {
-	 Write-Host "Ops... Qualcosa è andato storto :-( " -ForegroundColor Magenta
+	 Write-Host "`nOps... Qualcosa è andato storto :-( " -ForegroundColor Magenta
 	 Write-Host "Bye"
      break
 }
@@ -232,10 +233,13 @@ while(1) {
 		18 { #Visualizza punto di ingresso del cluster
 			kubectl --kubeconfig $filename -n istio-system -l istio=ingressgateway get svc
 		}
-		19 { # Visualizza il services del cluster/namespace selezionato
+		19 { #Visualizza il services del cluster/namespace selezionato
 			kubectl --kubeconfig $filename --namespace $namespece get services
 		}
-		20 { #Nessuna - esci
+		20 { #Visualizza lo stato di hpa
+			kubectl --kubeconfig $filename --namespace $namespece get hpa
+		}
+		21 { #Nessuna - esci
 			exit
 		}
 		Default {
