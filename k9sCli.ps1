@@ -29,7 +29,7 @@ $apm_code = $apm_code_in.ToLower()
 function get-List {
     Write-Host "Azioni disponibili (riferite al namespace):`n"
     Write-Host " 1  - Lista pods"
-    Write-Host " 3  - Accesso al container (Shell)"
+    Write-Host " 2  - Accesso al pod (Shell)"
     Write-Host " 3  - Rimuovi un Pod"
     Write-Host " 4  - Descrivi un Pod"
     Write-Host " 5  - Visualizza i container del namespace associato"
@@ -48,6 +48,8 @@ function get-List {
 	Write-Host " 18 - Visualizza punto di ingresso del cluster (url/ip/porte esposte)"
 	Write-Host " 19 - Visualizza il services del cluster/namespace selezionato"
 	Write-Host " 20 - Visualizza lo stato di hpa"
+	Write-Host " XX - Kubectl get endpoints --> Kubernates endpoint object"
+	Write-Host " XX - kubectl get rs"
 	Write-Host " 21 - Nessuna - esci`n"
 }
 
@@ -135,7 +137,7 @@ while(1) {
 			get-List
 		}
 		1 { #Lista pods
-			kubectl --kubeconfig $filename --namespace=$namespece get pods 
+			kubectl --kubeconfig $filename --namespace=$namespece get pods --show-labels -o wide
 		}
 		2 { #Accesso al container (Shell)
 			$container_id = Read-Host "`nInserisci l'id del container(NAME)"
@@ -168,7 +170,8 @@ while(1) {
 				kubectl --kubeconfig $filename -n $namespece get pods -o jsonpath='{range .items[*]}{"\n"}{.metadata.name}{":\t"}{range .spec.containers[*]}{.image}{", "}{end}{end}' | Sort-Object
 			}
 			$dettagli = $null
-		}
+		} # kubectl --kubeconfig dev-qa-1.yaml --namespace=glin-ap31312pltm004-dev-platform-namespace get pods -o jsonpath='{range .items[*]}{"\n"}{.metadata.name}{":\n"}{range .spec.containers[*]}{.image}{"\n"}{end}{end}' -l app=tm004
+		
 		6 { #Visualizza i Log di un Container
 			printPodList
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
@@ -251,3 +254,6 @@ while(1) {
 }
 
 
+#Comandi da implementare ?
+
+#kubectl get pods --field-selector=status.phase!=Running,spec.restartPolicy=Always --kubeconfig dev-qa-1.yaml --all-namespaces

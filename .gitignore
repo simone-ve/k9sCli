@@ -14,3 +14,5 @@ prod-1.yaml
 prod-2.yaml
 kubeconfig_user_reader_eks_glin_ap31312plmefdz_dev_platform
 kubeconfig_user_reader_eks_glin_ap31312plmetgz_dev_platform
+k9sCli.ps1
+.gitignore
