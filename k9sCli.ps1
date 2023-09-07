@@ -48,9 +48,10 @@ function get-List {
 	Write-Host " 18 - Visualizza punto di ingresso del cluster (url/ip/porte esposte)"
 	Write-Host " 19 - Visualizza il services del cluster/namespace selezionato"
 	Write-Host " 20 - Visualizza lo stato di hpa"
+	Write-Host " 21 - Trasferisci un file dal Pod in locale"
 	Write-Host " XX - Kubectl get endpoints --> Kubernates endpoint object"
 	Write-Host " XX - kubectl get rs"
-	Write-Host " 21 - Nessuna - esci`n"
+	Write-Host " 22 - Nessuna - esci`n"
 }
 
 function printMsg {
@@ -81,7 +82,7 @@ if(($ambiente -eq "dev") -or ($ambiente -eq "qa")){
 $sessions = Get-ChildItem 'C:\Users\simone.rigo\Enel\kubernates' | Where-Object { $_.Name -match $match_condition }
 
 if ($container_name.StartsWith($prefix)){
-	Write-Host "Trovato prefizzo (pl). Lo elimino"
+	Write-Host "Trovato prefisso (pl). Lo elimino"
 	$length = $container_name.length
 	$container_name = $container_name.Substring(2,$length-2)
 	Write-Host "Il componente è stato rinominato: " $container_name -ForegroundColor Yellow
@@ -134,10 +135,15 @@ while(1) {
 	{
 		0 { #Restituisce le scelte possibili
 			$action = $null
+			Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
 			get-List
 		}
 		1 { #Lista pods
-			kubectl --kubeconfig $filename --namespace=$namespece get pods --show-labels -o wide
+			kubectl --kubeconfig $filename --namespace=$namespece get pods
+			$action = Read-Host "`nVuoi ulteriori dettagli (rete/Host) dei pod (y/n)?"
+			if ($action -eq "y") {
+				kubectl --kubeconfig $filename --namespace=$namespece get pods --show-labels -o wide
+			}			
 		}
 		2 { #Accesso al container (Shell)
 			$container_id = Read-Host "`nInserisci l'id del container(NAME)"
@@ -242,7 +248,15 @@ while(1) {
 		20 { #Visualizza lo stato di hpa
 			kubectl --kubeconfig $filename --namespace $namespece get hpa
 		}
-		21 { #Nessuna - esci
+		21 { #Trasferisci un file dal Pod in locale
+			printPodList
+			$pod_id = Read-Host "`nInserisci l'id del pod che vuoi ispezionare"
+			$file_path = Read-Host "`nInserisci il path assoluto e il nome del file es: /dirName/dirName/fileName.txt"
+			$file_path_locale = Read-Host "`nInserisci il nome del file locale (verrà scritto nel di di esecuzione dello script)"
+			$input_file = -join($namespece,"/",$pod_id,":",$file_path)
+			kubectl cp $input_file $file_path_locale --kubeconfig $filename -c $container_name
+		}
+		22 { #Nessuna - esci
 			exit
 		}
 		Default {
@@ -255,5 +269,9 @@ while(1) {
 
 
 #Comandi da implementare ?
-
+#Verifica quali pod non si sono avviati perchè in errore
 #kubectl get pods --field-selector=status.phase!=Running,spec.restartPolicy=Always --kubeconfig dev-qa-1.yaml --all-namespaces
+
+
+#Per trasferire un file da pod a locale
+#kubectl cp glin-ap31312plmpaud-dev-platform-namespace/mpaud-deploy-automation-2023-07-28t09-43-55-1690537435-66c49472:/work/postgres/s3.local/work/1.161591.json 1.161591.json.local --kubeconfig dev-qa-3.yaml -c mpaud
