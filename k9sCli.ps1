@@ -23,6 +23,8 @@ $prefix 		     = "pl"
 
 Clear-Host
 
+$cluster_id = Read-Host "`nDigita il numero del cluster se lo conosci, 0 altrimenti"
+
 [Console]::CursorVisible = $false
 $apm_code = $apm_code_in.ToLower()
 
@@ -90,32 +92,48 @@ if ($container_name.StartsWith($prefix)){
 
 }
 
-foreach ($session in $sessions) {
-	$OutputVariable = $null
-	$namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
-	printFindMsg
-    $filename = ($session.Name.Substring($session.Name.LastIndexOf("\") + 1)).Replace("%20"," ")
-	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
-    $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
-	#13Write-Host "`ncommand_str	--> " $command_str
-	#13Write-Host "filename	--> " $filename
-    #13Write-Host "OutputVariable	--> " $OutputVariable
-    if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
-		Clear-Host
-		Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
-		printMsg
-        break
-    }
-	#in alcuni casi nel cluster appare con il prefisso pl. Provo a cercarlo anche in questo modo
-	$namespece = -join("glin-",$apm_code,"pl",$container_name,"-",$ambiente,"-platform-namespace")
-	$command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
-    $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
-    if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
-		Clear-Host
-		Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
-		printMsg
-        break
-    }
+if ($cluster_id -eq "0") {
+   foreach ($session in $sessions) {
+   	  $OutputVariable = $null
+   	  $namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
+   	  printFindMsg
+      $filename = ($session.Name.Substring($session.Name.LastIndexOf("\") + 1)).Replace("%20"," ")
+   	  $command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
+      $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
+   	  #13Write-Host "`ncommand_str	--> " $command_str
+   	  #13Write-Host "filename	--> " $filename
+      #13Write-Host "OutputVariable	--> " $OutputVariable
+      if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
+   		  Clear-Host
+   		  Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
+   		  printMsg
+          break
+       }
+   	  #in alcuni casi nel cluster appare con il prefisso pl. Provo a cercarlo anche in questo modo
+   	  $namespece = -join("glin-",$apm_code,"pl",$container_name,"-",$ambiente,"-platform-namespace")
+   	  $command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
+      $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
+      if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
+   		  Clear-Host
+   		  Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
+   		  printMsg
+          break
+         }
+   }
+} else {
+	 $namespece = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
+	 Write-Host "Namespace: " $namespece -ForegroundColor White "`n"
+	 $filename = -join("dev-qa-",$cluster_id,".yaml")
+	 $command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
+	 $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
+	 if ($OutputVariable -Like "*No resources found*") {
+		  $namespece = -join("glin-",$apm_code,"pl",$container_name,"-",$ambiente,"-platform-namespace")
+   	 	  $command_str = "kubectl --kubeconfig $filename -n $namespece get pods"
+          $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
+	 }
+	 if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
+   		  Write-Host "Namespace: Componete trovato!`n"
+       }
 }
 
 if ($OutputVariable -Like "*No resources found*") {
@@ -271,7 +289,3 @@ while(1) {
 #Comandi da implementare ?
 #Verifica quali pod non si sono avviati perchè in errore
 #kubectl get pods --field-selector=status.phase!=Running,spec.restartPolicy=Always --kubeconfig dev-qa-1.yaml --all-namespaces
-
-
-#Per trasferire un file da pod a locale
-#kubectl cp glin-ap31312plmpaud-dev-platform-namespace/mpaud-deploy-automation-2023-07-28t09-43-55-1690537435-66c49472:/work/postgres/s3.local/work/1.161591.json 1.161591.json.local --kubeconfig dev-qa-3.yaml -c mpaud
