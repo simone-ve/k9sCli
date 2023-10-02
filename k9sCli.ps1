@@ -51,9 +51,10 @@ function get-List {
 	Write-Host " 19 - Visualizza il services del cluster/namespace selezionato"
 	Write-Host " 20 - Visualizza lo stato di hpa"
 	Write-Host " 21 - Trasferisci un file dal Pod in locale"
+	Write-Host " 22 - List job"
+	Write-Host " 23 - Descrivi job"
 	Write-Host " XX - Kubectl get endpoints --> Kubernates endpoint object"
-	Write-Host " XX - kubectl get rs"
-	Write-Host " 22 - Nessuna - esci`n"
+	Write-Host " 24 - Nessuna - esci`n"
 }
 
 function printMsg {
@@ -160,7 +161,7 @@ while(1) {
 			kubectl --kubeconfig $filename --namespace=$namespece get pods
 			$action = Read-Host "`nVuoi ulteriori dettagli (rete/Host) dei pod (y/n)?"
 			if ($action -eq "y") {
-				kubectl --kubeconfig $filename --namespace=$namespece get pods --show-labels -o wide
+				kubectl --kubeconfig $filename --namespace=$namespece get pods --show-labels=true -o wide
 			}			
 		}
 		2 { #Accesso al container (Shell)
@@ -270,11 +271,18 @@ while(1) {
 			printPodList
 			$pod_id = Read-Host "`nInserisci l'id del pod che vuoi ispezionare"
 			$file_path = Read-Host "`nInserisci il path assoluto e il nome del file es: /dirName/dirName/fileName.txt"
-			$file_path_locale = Read-Host "`nInserisci il nome del file locale (verrà scritto nel di di esecuzione dello script)"
+			$file_path_locale = Read-Host "`nInserisci il nome del file locale senza path (verrà scritto nel dir di esecuzione dello script all'inteno di una dir con lo stesso nome)"
 			$input_file = -join($namespece,"/",$pod_id,":",$file_path)
 			kubectl cp $input_file $file_path_locale --kubeconfig $filename -c $container_name
 		}
-		22 { #Nessuna - esci
+		22 { #Lista jobs
+			kubectl --kubeconfig $filename -n $namespece get job
+		}
+		23 { #Descrivi job
+			$job_id = Read-Host "`nInserisci l'id del job che vuoi ispezionare"
+			kubectl --kubeconfig $filename -n $namespece describe jobs/$job_id
+		}
+		24 { #Nessuna - esci
 			exit
 		}
 		Default {
