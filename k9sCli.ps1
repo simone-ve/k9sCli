@@ -35,26 +35,27 @@ function get-List {
     Write-Host " 3  - Rimuovi un Pod"
     Write-Host " 4  - Descrivi un Pod"
     Write-Host " 5  - Visualizza i container del namespace associato"
-	Write-Host " 6  - Visualizza i Log di un Container"
-	Write-Host " 7  - Lista secrets del pod (filtro namespace)"
-	Write-Host " 8  - Lista secretproviderclass del pod (filtro namespace) - NON UTILIZZABILE(GRANT)" -ForegroundColor DarkGray
-	Write-Host " 9  - Lista secrets del cluster"
-	Write-Host " 10 - Descrivo il secret"
-	Write-Host " 11 - Lista degli eventi"
-	Write-Host " 12 - Lista eventi del pod"
-	Write-Host " 13 - Statistiche Keda"
-	Write-Host " 14 - Lista dei services"
-	Write-Host " 15 - Metriche del Pod"
-	Write-Host " 16 - Verifica i servizi attivi nel cluster (es: prometheus,istiod,zipkin ecc)"
-	Write-Host " 17 - Visualizza i pods all'inteno dell'istio namespace (istio-system)"
-	Write-Host " 18 - Visualizza punto di ingresso del cluster (url/ip/porte esposte)"
-	Write-Host " 19 - Visualizza il services del cluster/namespace selezionato"
-	Write-Host " 20 - Visualizza lo stato di hpa"
-	Write-Host " 21 - Trasferisci un file dal Pod in locale"
-	Write-Host " 22 - List job"
-	Write-Host " 23 - Descrivi job"
+	Write-Host " 6  - Visualizza i Log di un Pod"
+	Write-Host " 7  - Visualizza i Log di un Container"
+	Write-Host " 8  - Lista secrets del pod (filtro namespace)"
+	Write-Host " 9  - Lista secretproviderclass del pod (filtro namespace) - NON UTILIZZABILE(GRANT)" -ForegroundColor DarkGray
+	Write-Host " 10 - Lista secrets del cluster"
+	Write-Host " 11 - Descrivo il secret"
+	Write-Host " 12 - Lista degli eventi"
+	Write-Host " 13 - Lista eventi del pod"
+	Write-Host " 14 - Statistiche Keda"
+	Write-Host " 15 - Lista dei services"
+	Write-Host " 16 - Metriche del Pod"
+	Write-Host " 17 - Verifica i servizi attivi nel cluster (es: prometheus,istiod,zipkin ecc)"
+	Write-Host " 18 - Visualizza i pods all'inteno dell'istio namespace (istio-system)"
+	Write-Host " 19 - Visualizza punto di ingresso del cluster (url/ip/porte esposte)"
+	Write-Host " 20 - Visualizza il services del cluster/namespace selezionato"
+	Write-Host " 21 - Visualizza lo stato di hpa"
+	Write-Host " 22 - Trasferisci un file dal Pod in locale"
+	Write-Host " 23 - List job"
+	Write-Host " 24 - Descrivi job"
 	Write-Host " XX - Kubectl get endpoints --> Kubernates endpoint object"
-	Write-Host " 24 - Nessuna - esci`n"
+	Write-Host " 25 - Nessuna - esci`n"
 }
 
 function printMsg {
@@ -172,7 +173,7 @@ while(1) {
 			kubectl --kubeconfig $filename --namespace=$namespace get pods
 			$action = Read-Host "`nVuoi ulteriori dettagli (rete/Host) dei pod (y/n)?"
 			if ($action -eq "y") {
-				kubectl --kubeconfig $filename --namespace=$namespace get pods --show-labels=true -o wide
+				kubectl --kubeconfig $filename --namespace=$namespace get pods --show-labels=true -o wide #-o="custom-columns=NAME:.metadata.name,INIT-CONTAINERS:.spec.initContainers[*].name,CONTAINERS:.spec.containers[*].name"
 			}			
 		}
 		2 { #Accesso al container (Shell)
@@ -207,24 +208,30 @@ while(1) {
 			}
 			$dettagli = $null
 		} # kubectl --kubeconfig dev-qa-1.yaml --namespace=glin-ap31312pltm004-dev-platform-namespace get pods -o jsonpath='{range .items[*]}{"\n"}{.metadata.name}{":\n"}{range .spec.containers[*]}{.image}{"\n"}{end}{end}' -l app=tm004
-		
-		6 { #Visualizza i Log di un Container
+		6 { #Visualizza i Log di un Pod
 			printPodList
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
-			$row_num = Read-Host "Numero di righe (ultime) che vuoi visualizzare?"
-			$container_name = Read-Host "`nInserisci il nome del container"
+			kubectl --kubeconfig $filename -n $namespace logs $pod_id --all-containers
+		}
+		7 { #Visualizza i Log di un specifico Container
+			printPodList
+			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
+            Write-Host "`nLista dei container presenti nel pod"
+			kubectl --kubeconfig $filename -n $namespace get pods $pod_id -o jsonpath='{.spec.containers[*].name}'
+			$container_name = Read-Host "`nSeleziona il nome del container:"
+			$row_num = Read-Host "`nNumero di righe (ultime) che vuoi visualizzare?"
 			kubectl --kubeconfig $filename logs $pod_id -n $namespace  --tail=$row_num -c $container_name
 		}
-		7 { #Lista secrets del pod (filtro namespace)
+		8 { #Lista secrets del pod (filtro namespace)
 			kubectl --kubeconfig $filename -n $namespace get secrets
 		}
-		8 { #Lista secretproviderclass del pod (filtro namespace) - NON UTILIZZABILE(GRANT)
+		9 { #Lista secretproviderclass del pod (filtro namespace) - NON UTILIZZABILE(GRANT)
 			kubectl --kubeconfig $filename -n $namespace get secretproviderclass
 		}
-		9 { #Lista secrets del cluster
+		10 { #Lista secrets del cluster
 			kubectl --kubeconfig $filename -n kube-system get secrets
 		}
-		10 { #Descrivo il secret
+		11 { #Descrivo il secret
 			kubectl --kubeconfig $filename -n $namespace get secrets
 			$secret_id = Read-Host "`nInserisci l'id del secret"
 			kubectl --kubeconfig $filename -n $namespace describe secrets $secret_id
@@ -233,7 +240,7 @@ while(1) {
 				kubectl --kubeconfig $filename -n $namespace get secrets $secret_id -o yaml
 			}
 		}
-		11 { #Lista degli eventi
+		12 { #Lista degli eventi
 			$event_type = Read-Host "Vuoi visualizzare solo gli eventi di tipo error/warning(y/n)?"
 			if ($event_type -eq "y") {
 				kubectl --kubeconfig $filename -n $namespace get events --field-selector type!=Normal
@@ -242,43 +249,43 @@ while(1) {
 			}
 		}
 
-		12 { #Lista eventi del pod
+		13 { #Lista eventi del pod
 			printPodList
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			#Devo passare per una stringa altrimenti il comando fallisce. Assurdo!
 			$command_str = "kubectl --kubeconfig $filename --namespace=$namespace get events --field-selector involvedObject.kind=Pod,involvedObject.name=$pod_id"
 			cmd.exe /c $command_str
 		}
-		13 { #Statistiche Keda del namespace associato
+		14 { #Statistiche Keda del namespace associato
 			Write-Host "visualizza scaledobject...."
 			kubectl --kubeconfig $filename -n $namespace get scaledobject
 			Write-Host "visualizza ScaledJobs...."
 			kubectl --kubeconfig $filename -n $namespace get ScaledJobs
 		}
-		14 { #Lista dei services del namespace associato
+		15 { #Lista dei services del namespace associato
 			kubectl --kubeconfig $filename -n $namespace get svc
 		}
-		15 { #Metriche del Pod
+		16 { #Metriche del Pod
 			printPodList
 			$pod_id = Read-Host "`nInserisci l'id del pod(NAME)"
 			kubectl --kubeconfig $filename -n $namespace describe PodMetrics $pod_id
 		}
-		16 { #Verifica i servizi attivi
+		17 { #Verifica i servizi attivi
 			kubectl --kubeconfig $filename -n istio-system get svc
 		}
-		17 { #Visualizza i pods all'inteno dell'istio namespace
+		18 { #Visualizza i pods all'inteno dell'istio namespace
 			kubectl --kubeconfig $filename -n istio-system get pods
 		}
-		18 { #Visualizza punto di ingresso del cluster
+		19 { #Visualizza punto di ingresso del cluster
 			kubectl --kubeconfig $filename -n istio-system -l istio=ingressgateway get svc
 		}
-		19 { #Visualizza il services del cluster/namespace selezionato
+		20 { #Visualizza il services del cluster/namespace selezionato
 			kubectl --kubeconfig $filename --namespace $namespace get services
 		}
-		20 { #Visualizza lo stato di hpa
+		21 { #Visualizza lo stato di hpa
 			kubectl --kubeconfig $filename --namespace $namespace get hpa
 		}
-		21 { #Trasferisci un file dal Pod in locale
+		22 { #Trasferisci un file dal Pod in locale
 			printPodList
 			$pod_id = Read-Host "`nInserisci l'id del pod che vuoi ispezionare"
 			$file_path = Read-Host "`nInserisci il path assoluto e il nome del file es: /dirName/dirName/fileName.txt"
@@ -286,14 +293,14 @@ while(1) {
 			$input_file = -join($namespace,"/",$pod_id,":",$file_path)
 			kubectl cp $input_file $file_path_locale --kubeconfig $filename -c $container_name
 		}
-		22 { #Lista jobs
+		23 { #Lista jobs
 			kubectl --kubeconfig $filename -n $namespace get job
 		}
-		23 { #Descrivi job
+		24 { #Descrivi job
 			$job_id = Read-Host "`nInserisci l'id del job che vuoi ispezionare"
 			kubectl --kubeconfig $filename -n $namespace describe jobs/$job_id
 		}
-		24 { #Nessuna - esci
+		25 { #Nessuna - esci
 			exit
 		}
 		Default {
