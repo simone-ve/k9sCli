@@ -23,7 +23,7 @@ $prefix 		     = "pl"
 
 Clear-Host
 
-$cluster_id = Read-Host "`nDigita il numero del cluster se lo conosci, 0 altrimenti"
+$cluster_id = Read-Host "`nDigita il numero del cluster se lo conosci, 0 altrimenti, invio per default(dl00001))"
 
 [Console]::CursorVisible = $false
 $apm_code = $apm_code_in.ToLower()
@@ -96,12 +96,16 @@ function getConnection {
 if(($ambiente -eq "dev") -or ($ambiente -eq "qa")){
 	if ($apm_code -eq "dl00003") {
         $match_condition = '^(dev).*_dl00003\.yaml$'
+	} elseif ($apm_code -eq "dl00001") {
+		$match_condition = 'dev-qa-dl00001.yaml'
 	} else {
 		$match_condition = '^(dev-qa-)\d{1}\.yaml$'
 	}	
 } else {
 	if ($apm_code -eq "dl00003") {
 		$match_condition = '^(prod_dl00003).*\.yaml$'
+	} elseif ($apm_code -eq "dl00001") {
+		$match_condition = 'prod-dl00001.yaml' 
 	} else {
 		$match_condition = '^(prod-)\d{1}\.yaml$'
 	}
@@ -116,7 +120,19 @@ if ($container_name.StartsWith($prefix)){
 
 }
 
-if ($cluster_id -eq "0") {
+if ([string]::IsNullOrEmpty($cluster_id)) {
+	$namespace = -join("glin-dl00001pl",$container_name,"-",$ambiente,"-platform-namespace")
+	Write-Host "Namespace: " $namespace -ForegroundColor White "`n"
+	$filename = "dev-qa-dl00001.yaml"
+	$command_str = -join("kubectl --kubeconfig ", $filename," -n ",$namespace, " get pods")
+	$OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String	 
+	if ($OutputVariable -Like "*fatal: cannot change to*") {
+		Write-Host "`nRepository non trovato " -ForegroundColor Magenta
+	}
+	if(($OutputVariable -Notlike "*Error from server*") -and ($OutputVariable -Notlike "*No resources found*")) {
+			Write-Host "Namespace: Componente trovato!`n"
+	  }
+} elseif($cluster_id -eq "0") {
     $sessions = Get-ChildItem 'C:\Users\simone.rigo\Enel\kubernates' | Where-Object { $_.Name -match $match_condition }
     foreach ($session in $sessions) {
    	    $OutputVariable = $null
@@ -138,9 +154,9 @@ if ($cluster_id -eq "0") {
 } else {
 	 $namespace = -join("glin-",$apm_code,$container_name,"-",$ambiente,"-platform-namespace")
 	 Write-Host "Namespace: " $namespace -ForegroundColor White "`n"
-	 $filename = -join("dev-qa-",$cluster_id,".yaml")
-	 $command_str = "kubectl --kubeconfig $filename -n $namespace get pods"
-	 $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String
+     $filename = -join("dev-qa-",$cluster_id,".yaml")
+	 $command_str = -join("kubectl --kubeconfig ",$filename," -n ",$namespace, " get pods")
+	 $OutputVariable = (cmd.exe /c $command_str 2>&1) | Out-String	 
 	 if ($OutputVariable -Like "*fatal: cannot change to*") {
 		 Write-Host "`nRepository non trovato " -ForegroundColor Magenta
 	 }
